@@ -42,13 +42,13 @@ class AleDenoiser:
 
         # anc; delay primary input by L/2 samples to allow prediction filter to have two sided impulse response
         if self.scheme == 2 or self.scheme == 3:
-            f2 = pa.filters.FilterNLMS(n=self.l2, mu=0.1, w="random")
+            f2 = pa.filters.FilterNLMS(n=self.l2, mu=0.5, w="random")
             x_anc = pa.input_from_history(n_hat, self.l2)
             # Delay d_anc by N/2
             if self.scheme == 2:
                 d_anc = s_hat[:x_anc.shape[0] - self.l2 // 2]
             else:
-                d_anc = x[:x_anc.shape[0] - self.l2 // 2]
+                d_anc = d_ale[:x_anc.shape[0] - self.l2 // 2]
             d_anc = np.concatenate([np.zeros(self.l2 // 2), d_anc])
             x_anc = x_anc[:len(d_anc), :]
             n_hat, s_hat, self.W2 = f2.run(d_anc, x_anc)
@@ -86,7 +86,7 @@ class AleDenoiser:
         if self.scheme == 2:
             d_anc = y[:x_anc.shape[0] - self.l2 // 2]
         else:
-            d_anc = x[:x_anc.shape[0] - self.l2 // 2]
+            d_anc = d_ale[:x_anc.shape[0] - self.l2 // 2]
         d_anc = np.concatenate([np.zeros(self.l2 // 2), d_anc])
 
         e = []

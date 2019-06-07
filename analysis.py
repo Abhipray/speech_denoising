@@ -14,7 +14,7 @@ from ale_anc import AleDenoiser
 
 noisy_dataset = pathlib.Path("dataset/speech_plus_noise/")
 clean_dataset = pathlib.Path("dataset/speech/")
-conditions = list(noisy_dataset.iterdir())[2:3]
+conditions = list(noisy_dataset.iterdir())[4:5]
 print("There are {} conditions".format(len(conditions)))
 
 sr = 16000
