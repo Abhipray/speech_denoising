@@ -23,7 +23,7 @@ The results are captured in the table below. The numbers in the table are the SN
 | pink_-3dB          |  1.67194   |  2.30731  |  1.27683  |
 | pink_3dB           |  0.829052  |  0.260178 | -0.411436 |
  
- To listen to the output of the denoiser under these different conditions, see the [out](../out) folder. 
+ To listen to the output of the denoiser under these different conditions, see the [out](/out) folder. 
  
  
 This work was done as part of Stanford's EE373A: Adaptive signal processing with Dr. Widrow.
