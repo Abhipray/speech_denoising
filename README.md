@@ -8,7 +8,7 @@ There are three denoising schemes implemented:
 
 Six speech files were corrupted with white noise and pink noise at four different SNR levels: [-10dB, -3dB, 0dB, 3dB, 10dB]
 
-The results are captured in the table below. The numbers in the table are the SNR boost from the de-noiser. It is measured by passing the speech only and noise only signals through the same path (through the learned adaptive filter weights); the output SNR is then computed from the power of the two output signals.
+The results are captured in the table below. The numbers in the table are the SNR boost from the de-noiser. It is measured by passing the speech only and noise only signals through the same path (through the learned adaptive filter weights); the output SNR is then computed from the power of the two output signals. This works because of the linearity of the adaptive filters.
 
 | scheme/condition   |          1 |         2 |         3 |
 |--------------------|------------|-----------|-----------|
@@ -26,4 +26,4 @@ The results are captured in the table below. The numbers in the table are the SN
  To listen to the output of the denoiser under these different conditions, see the [out](../out) folder. 
  
  
-This work was done as part of EE373: Adaptive signal processing with Dr. Widrow.
+This work was done as part of Stanford's EE373A: Adaptive signal processing with Dr. Widrow.
