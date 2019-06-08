@@ -6,17 +6,20 @@ Generate the noisy dataset using generate_dataset.py script.
 """
 import pathlib
 import librosa
-import padasip as pa
+import pandas as pd
 import numpy as np
 import os
 
+np.random.seed(89)  # Make experiment reproducible
+
 from tqdm.autonotebook import tqdm
 from ale_anc import AleDenoiser
+from tabulate import tabulate
 
 noisy_dataset = pathlib.Path("dataset/speech_plus_noise/")
 clean_dataset = pathlib.Path("dataset/speech/")
 output_dir = pathlib.Path("out/")
-conditions = list(noisy_dataset.iterdir())[4:5]
+conditions = list(noisy_dataset.iterdir())
 print("There are {} conditions".format(len(conditions)))
 
 sr = 16000
@@ -31,13 +34,14 @@ def rms_energy(x):
 results = {}
 
 for scheme in tqdm(range(1, 4)):
-
+    condition_results = []
     for condition in tqdm(conditions):
         tqdm.write(condition.stem)
         all = set(condition.glob("*.wav"))
         noise_only = set(condition.glob("*_noise.wav"))
         noisy = all - noise_only
 
+        avg_snr_boost = 0
         for sample in noisy:
             # De-noise the noisy signal
             y, sr = librosa.load(sample, sr)
@@ -57,19 +61,34 @@ for scheme in tqdm(range(1, 4)):
             s_hat2 = ale_denoiser.feed_forward(speech)
 
             # Write de-noised audio out
+
+            # Ignore the first 10% of the audio file since that part has a loud pop for when the adaptive filter has
+            # random weights
+            samp_idx = int(0.1 * len(s_hat2))
+
             os.makedirs(
                 output_dir / ("scheme_" + str(scheme)) / condition.stem,
                 exist_ok=True)
             librosa.output.write_wav(
                 output_dir / ("scheme_" + str(scheme)) / condition.stem /
-                sample.name, s_hat, sr)
+                sample.name, s_hat[samp_idx:], sr)
 
-            # Ignore the first 10% of the audio file for calculating output SNR
-            samp_idx = int(0.1 * len(s_hat2))
             output_snr = rms_energy(s_hat2[samp_idx:]) - rms_energy(
                 n_hat2[samp_idx:])
+            input_snr = rms_energy(speech[samp_idx:]) - rms_energy(
+                noise[samp_idx:])
 
-            results["scheme_{}_condition_{}_file_{}".format(
-                scheme, condition.stem, sample.stem)] = output_snr
+            avg_snr_boost += (output_snr - input_snr)
 
-print(results)
+        avg_snr_boost /= len(noisy)
+        condition_results.append(avg_snr_boost)
+    results[scheme] = condition_results
+
+# Display results
+col_names = [condition.name for condition in conditions]
+df = pd.DataFrame.from_dict(results, orient='index', columns=col_names)
+print(
+    tabulate(
+        df.T,
+        tablefmt="github",
+        headers=["scheme/condition"] + list(range(1, 4))))

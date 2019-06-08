@@ -4,6 +4,7 @@ This script implements three different schemes for denoising speech corrupted wi
 
 import padasip as pa
 import numpy as np
+import scipy.signal
 
 
 class AleDenoiser:
@@ -28,29 +29,35 @@ class AleDenoiser:
         :param scheme: {1, 2 or 3} See description above.
         :return: s_hat, n_hat
         """
-        x_ale = pa.input_from_history(
-            np.concatenate((np.zeros(self.delta, ), x)), self.l1)
+        # Create a delayed version of the input signal by filtering through z^(-delta)
+        num_coeffs = np.zeros((self.delta + 1, ))
+        num_coeffs[self.delta] = 1
+        x_delayed = scipy.signal.lfilter(num_coeffs, 1, x)
+
+        # Prepare the input into the ALE
+        x_ale = pa.input_from_history(x_delayed, self.l1)
 
         # Create desired signal
-        d_ale = np.zeros((x_ale.shape[0], ))
-        for i in range(self.delta, x_ale.shape[0]):
-            d_ale[i - self.delta] = x_ale[i][0]
+        d_ale = x[:x_ale.shape[0]]
 
         # ale
-        f = pa.filters.FilterNLMS(n=self.l1, mu=2, w="random")
+        f = pa.filters.FilterNLMS(n=self.l1, mu=1, w="random")
         s_hat, n_hat, self.W1 = f.run(d_ale, x_ale)
 
         # anc; delay primary input by L/2 samples to allow prediction filter to have two sided impulse response
         if self.scheme == 2 or self.scheme == 3:
             f2 = pa.filters.FilterNLMS(n=self.l2, mu=0.5, w="random")
             x_anc = pa.input_from_history(n_hat, self.l2)
-            # Delay d_anc by N/2
             if self.scheme == 2:
-                d_anc = s_hat[:x_anc.shape[0] - self.l2 // 2]
+                d_anc = s_hat
             else:
-                d_anc = d_ale[:x_anc.shape[0] - self.l2 // 2]
-            d_anc = np.concatenate([np.zeros(self.l2 // 2), d_anc])
-            x_anc = x_anc[:len(d_anc), :]
+                d_anc = d_ale
+            # Delay d_anc by L/2
+            num_coeffs = np.zeros((self.l2 // 2 + 1, ))
+            num_coeffs[self.l2 // 2] = 1
+            d_anc = scipy.signal.lfilter(num_coeffs, 1, d_anc)
+            d_anc = d_anc[:x_anc.shape[0]]
+
             n_hat, s_hat, self.W2 = f2.run(d_anc, x_anc)
 
         return s_hat, n_hat
@@ -60,13 +67,15 @@ class AleDenoiser:
         if self.W1 is None or (self.scheme >= 2 and self.W2 is None):
             return None
 
-        x_ale = pa.input_from_history(
-            np.concatenate((np.zeros(self.delta, ), x)), self.l1)
+        # Create a delayed version of the input signal by filtering through z^(-delta)
+        num_coeffs = np.zeros((self.delta + 1, ))
+        num_coeffs[self.delta] = 1
+        x_delayed = scipy.signal.lfilter(num_coeffs, 1, x)
+
+        x_ale = pa.input_from_history(x_delayed, self.l1)
 
         # Create desired signal
-        d_ale = np.zeros((x_ale.shape[0], ))
-        for i in range(self.delta, x_ale.shape[0]):
-            d_ale[i - self.delta] = x_ale[i][0]
+        d_ale = x[:x_ale.shape[0]]
 
         # ale
         e = []
@@ -84,10 +93,14 @@ class AleDenoiser:
         # output of the previous AF
         x_anc = pa.input_from_history(e, self.l2)
         if self.scheme == 2:
-            d_anc = y[:x_anc.shape[0] - self.l2 // 2]
+            d_anc = y
         else:
-            d_anc = d_ale[:x_anc.shape[0] - self.l2 // 2]
-        d_anc = np.concatenate([np.zeros(self.l2 // 2), d_anc])
+            d_anc = d_ale
+        # Delay d_anc by L/2
+        num_coeffs = np.zeros((self.l2 // 2 + 1, ))
+        num_coeffs[self.l2 // 2] = 1
+        d_anc = scipy.signal.lfilter(num_coeffs, 1, d_anc)
+        d_anc = d_anc[:x_anc.shape[0]]
 
         e = []
         for i in range(self.W2.shape[0]):

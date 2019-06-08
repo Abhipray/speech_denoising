@@ -1,4 +1,3 @@
-from maracas.dataset import Dataset
 import os, itertools
 from tqdm import tqdm
 from glob import glob
@@ -7,7 +6,7 @@ import numpy as np
 from maracas.utils import wavread, wavwrite, recursive_glob
 from maracas import add_noise, add_reverb
 
-np.random.seed(89)
+np.random.seed(89)  # Make experiment reproducible
 
 
 class MyDataset(object):
@@ -165,9 +164,8 @@ d = MyDataset()
 d.add_speech_files("dataset/speech/", recursive=True)
 
 # Define noise files
-d.add_noise_files("dataset/noise/noise_babble.wav", name="babble")
 d.add_noise_files("dataset/noise/noise_white.wav", name="white")
 d.add_noise_files("dataset/noise/noise_pink.wav", name="pink")
 
-SNRs = [-10, -3, 0, 3, 6]
+SNRs = [-10, -3, 0, 3, 10]
 d.generate_dataset(SNRs, "dataset/speech_plus_noise")
