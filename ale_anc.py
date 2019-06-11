@@ -8,13 +8,16 @@ import scipy.signal
 
 
 class AleDenoiser:
-    def __init__(self, fs, scheme, l1=256, l2=256, delta_ms=16):
+    def __init__(self, fs, scheme, l1=256, l2=128, delta_ms=16, mu1=2,
+                 mu2=0.5):
         self.fs = fs
         self.scheme = scheme
         self.l1 = l1
         self.l2 = l2
         self.W1 = None
         self.W2 = None
+        self.mu1 = mu1
+        self.mu2 = mu2
         self.delta = int(delta_ms * self.fs / 1000)
         assert (self.scheme in {1, 2, 3})
 
@@ -38,15 +41,15 @@ class AleDenoiser:
         x_ale = pa.input_from_history(x_delayed, self.l1)
 
         # Create desired signal
-        d_ale = x[:x_ale.shape[0]]
+        d_ale = x[self.l1 - 1:]
 
         # ale
-        f = pa.filters.FilterNLMS(n=self.l1, mu=1, w="random")
+        f = pa.filters.FilterNLMS(n=self.l1, mu=self.mu1, w="random")
         s_hat, n_hat, self.W1 = f.run(d_ale, x_ale)
 
         # anc; delay primary input by L/2 samples to allow prediction filter to have two sided impulse response
         if self.scheme == 2 or self.scheme == 3:
-            f2 = pa.filters.FilterNLMS(n=self.l2, mu=0.5, w="random")
+            f2 = pa.filters.FilterNLMS(n=self.l2, mu=self.mu2, w="random")
             x_anc = pa.input_from_history(n_hat, self.l2)
             if self.scheme == 2:
                 d_anc = s_hat
@@ -56,7 +59,7 @@ class AleDenoiser:
             num_coeffs = np.zeros((self.l2 // 2 + 1, ))
             num_coeffs[self.l2 // 2] = 1
             d_anc = scipy.signal.lfilter(num_coeffs, 1, d_anc)
-            d_anc = d_anc[:x_anc.shape[0]]
+            d_anc = d_anc[self.l2 - 1:]
 
             n_hat, s_hat, self.W2 = f2.run(d_anc, x_anc)
 
@@ -75,7 +78,7 @@ class AleDenoiser:
         x_ale = pa.input_from_history(x_delayed, self.l1)
 
         # Create desired signal
-        d_ale = x[:x_ale.shape[0]]
+        d_ale = x[self.l1 - 1:]
 
         # ale
         e = []
@@ -96,11 +99,12 @@ class AleDenoiser:
             d_anc = y
         else:
             d_anc = d_ale
+
         # Delay d_anc by L/2
         num_coeffs = np.zeros((self.l2 // 2 + 1, ))
         num_coeffs[self.l2 // 2] = 1
         d_anc = scipy.signal.lfilter(num_coeffs, 1, d_anc)
-        d_anc = d_anc[:x_anc.shape[0]]
+        d_anc = d_anc[self.l2 - 1:]
 
         e = []
         for i in range(self.W2.shape[0]):

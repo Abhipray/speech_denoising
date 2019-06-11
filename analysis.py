@@ -22,12 +22,23 @@ output_dir = pathlib.Path("out/")
 conditions = list(noisy_dataset.iterdir())
 print("There are {} conditions".format(len(conditions)))
 
-sr = 16000
+config = {
+    'fs': 16000,
+    'l1': 256,
+    'l2': 256,
+    'mu1': 2,
+    'mu2': 0.5,
+    'delta_ms': 16
+}
+
+df = pd.DataFrame.from_dict(config, orient='index')
+print(tabulate(df, tablefmt="github"))
 
 os.makedirs(output_dir, exist_ok=True)
 
 
 def rms_energy(x):
+    """RMS energy in dB"""
     return 10 * np.log10((1e-12 + x.dot(x)) / len(x))
 
 
@@ -44,14 +55,21 @@ for scheme in tqdm(range(1, 4)):
         avg_snr_boost = 0
         for sample in noisy:
             # De-noise the noisy signal
-            y, sr = librosa.load(sample, sr)
-            ale_denoiser = AleDenoiser(sr, scheme=scheme)
+            y, sr = librosa.load(sample, config['fs'])
+            ale_denoiser = AleDenoiser(
+                sr,
+                scheme=scheme,
+                delta_ms=config['delta_ms'],
+                l1=config['l1'],
+                l2=config['l2'],
+                mu1=config['mu1'],
+                mu2=config['mu2'])
             s_hat, n_hat = ale_denoiser.ale_anc(y)
 
             # Open the noise only file
             noise, sr = librosa.load(
                 str(sample.parent) + str(sample).split(".wav")[-1] + "/" +
-                sample.stem + "_noise.wav", sr)
+                sample.stem + "_noise.wav", config['fs'])
 
             # Open the signal only file
             speech, sr = librosa.load(clean_dataset / sample.name, sr)
