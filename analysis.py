@@ -24,15 +24,15 @@ print("There are {} conditions".format(len(conditions)))
 
 config = {
     'fs': 16000,
-    'l1': 256,
-    'l2': 256,
-    'mu1': 2,
+    'l1': 128,
+    'l2': 128,
+    'mu1': 1,
     'mu2': 0.5,
     'delta_ms': 16
 }
 
 df = pd.DataFrame.from_dict(config, orient='index')
-print(tabulate(df, tablefmt="github"))
+print(tabulate(df, tablefmt="github", headers=["Param", "Value"]))
 
 os.makedirs(output_dir, exist_ok=True)
 

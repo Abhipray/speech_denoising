@@ -25,6 +25,7 @@ The results are captured in the table below. The numbers in the table are the SN
 
 The results were generated with the following configuration. See analysis.py for documentation of what these parameters mean:
 
+|param     | value   |
 |----------|---------|
 | fs       | 16000   |
 | l1       |   256   |
@@ -32,7 +33,7 @@ The results were generated with the following configuration. See analysis.py for
 | mu1      |     2   |
 | mu2      |     0.5 |
 | delta_ms |    16   |
- 
+
  To listen to the output of the denoiser under these different conditions, see the [out](/out) folder. 
  
  

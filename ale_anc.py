@@ -8,8 +8,7 @@ import scipy.signal
 
 
 class AleDenoiser:
-    def __init__(self, fs, scheme, l1=256, l2=128, delta_ms=16, mu1=2,
-                 mu2=0.5):
+    def __init__(self, fs, scheme, l1=128, l2=128, delta_ms=1, mu1=1, mu2=0.5):
         self.fs = fs
         self.scheme = scheme
         self.l1 = l1
